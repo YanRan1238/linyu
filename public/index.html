@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>霖鱼July歌单系统</title>
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Microsoft Yahei;
+        }
+        .bg-video{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width:100%;
+            height:100%;
+            object-fit: cover;
+            z-index:-999;
+            display:none;
+            pointer-events:none;
+        }
+        .bg-video::-webkit-media-controls{
+            display: none !important;
+        }
+        .bg-video::-webkit-media-controls-enclosure{
+            display: none !important;
+        }
+        .default-bg{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width:100%;
+            height:100%;
+            z-index:-1000;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(255, 128, 180, 0.18) 0%, transparent 50%),
+                radial-gradient(circle at 80% 10%, rgba(120, 119, 198, 0.18) 0%, transparent 50%),
+                radial-gradient(circle at 50% 110%, rgba(255, 128, 180, 0.22) 0%, transparent 28%),
+                radial-gradient(circle at 30% 100%, rgba(120, 119, 198, 0.18) 0%, transparent 32%),
+                radial-gradient(circle at 70% 105%, rgba(255, 180, 210, 0.15) 0%, transparent 30%),
+                linear-gradient(180deg, #111326 0%, #1c1b35 48%, #111326 100%);
+            display:block;
+        }
+        .default-bg::before{
+            content:"";
+            position:absolute;
+            inset:0;
+            background-image:
+                radial-gradient(circle, rgba(255,255,255,0.045) 1px, transparent 1px);
+            background-size:16px 16px;
+            opacity:0.35;
+        }
+        .default-bg::after{
+            content:"";
+            position:absolute;
+            left:0;
+            bottom:0;
+            width:100%;
+            height:180px;
+            background: linear-gradient(to top, rgba(255, 128, 180, 0.14), transparent);
+            pointer-events:none;
+        }
+        body{
+            background-image: url("");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            min-height:100vh;
+            padding:16px;
+            background-color:transparent;
+            position:relative;
+            z-index:0;
+        }
+        .container{
+            max-width:700px;
+            width:100%;
+            margin:0 auto;
+            background:rgba(255,255,255,0.08);
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+            padding:20px;
+            border-radius:12px;
+            box-shadow:0 4px 20px #0000001a;
+            position:relative;
+            z-index:10;
+        }
+        .login-box{
+            margin-bottom:20px;
+            padding:16px;
+            border:1px solid rgba(255,255,255,0.1);
+            border-radius:8px;
+            background:rgba(255,255,255,0.08);
+        }
+        input{
+            padding:10px 12px;
+            margin:6px 4px;
+            border:1px solid #ccc;
+            border-radius:6px;
+            font-size:16px;
+        }
+        button{
+            padding:10px 16px;
+            border:none;
+            border-radius:6px;
+            background:#2563eb;
+            color:#fff;
+            cursor:pointer;
+            margin:4px;
+            font-size:16px;
+        }
+        button.del{
+            background:#dc2626;
+        }
+        textarea{
+            width:100%;
+            min-height:140px;
+            padding:10px;
+            border:1px solid rgba(255,255,255,0.1);
+            border-radius:6px;
+            font-size:16px;
+            margin:10px 0;
+            background:rgba(255,255,255,0.08);
+            color:#222;
+        }
+        .info-bar{
+            padding:10px;
+            background:rgba(238,242,255,0.08);
+            border-radius:6px;
+            margin:10px 0;
+            display:flex;
+            flex-wrap:wrap;
+            gap:8px;
+            justify-content:space-between;
+            align-items:center;
+        }
+        .bg-set{
+            margin:12px 0;
+            padding:12px;
+            border:1px dashed rgba(170,170,170,0.1);
+            border-radius:6px;
+        }
+        .hide{
+            display:none !important;
+        }
+        #loginArea,#mainPage{
+            position:relative;
+            z-index:10;
+        }
+        h2,h4,span,p,label{
+            color:#e4c8eb;
+        }
+        .song4col{
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap:12px 6px;
+            grid-auto-rows: min-content;
+        }
+        .song3col{
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap:12px 8px;
+            grid-auto-rows: min-content;
+        }
+        .song-item{
+            padding:6px 4px;
+            background:transparent;
+            border-radius:6px;
+            font-size:16px;
+            line-height:1.3;
+        }
+        .part-title{
+            margin:14px 0 8px;
+            font-size:17px;
+            color:#f0d8f7;
+        }
+        .two-input-wrap{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:10px;
+        }
+        @media(max-width:640px){
+            .two-input-wrap{
+                grid-template-columns:1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="default-bg" id="defaultBg"></div>
+<video class="bg-video" id="bgVideo"
+    autoplay muted loop
+    playsinline webkit-playsinline
+    x5-playsinline="true"
+    x5-video-player-type="h5-page"
+    x5-video-player-fullscreen="false"
+    disablePictureInPicture
+    preload="auto">
+</video>
+<div class="container">
+    <h2>霖鱼July歌单系统</h2>
+    <div class="login-box" id="loginArea">
+        <h4>请登录</h4>
+        <div>
+            <input type="text" id="username" placeholder="账号">
+            <input type="password" id="pwd" placeholder="密码">
+            <button onclick="login()">登录</button>
+        </div>
+        <div style="margin-top:8px;font-size:13px;color:#303033">
+            账号:小霖石 密码:123
+        </div>
+    </div>
+    <div id="mainPage" class="hide">
+        <div class="info-bar">
+            <span>当前身份：<span id="roleText"></span></span>
+            <button style="background:#666" onclick="logout()">退出登录</button>
+        </div>
+        <div id="bgUploadArea" class="bg-set hide">
+            <h4>🌄 设置背景（仅管理员）</h4>
+            <div>
+                <h5>静态图片背景</h5>
+                <input type="file" id="bgFileInput" accept="image/*">
+            </div>
+            <div style="margin-top:8px;">
+                <h5>🎬动态视频壁纸(mp4)</h5>
+                <input type="file" id="videoFileInput" accept="video/mp4">
+            </div>
+            <button onclick="clearBg()">清除全部背景</button>
+            <div style="font-size:13px;color:#b8b8d4;margin-top:4px;">
+                上传所有设备同步；电脑播放视频动态；手机显示图片背景，未上传图片时显示默认背景
+            </div>
+        </div>
+        <div id="adminEditZone">
+            <h4>内容数据</h4>
+            <textarea id="contentArea"></textarea>
+            <div id="adminBtns">
+                <button onclick="saveContent()">保存修改</button>
+                <!-- <button class="del" onclick="resetContent()">重置内容</button> -->
+            </div>
+        </div>
+        <div style="margin-top:12px;color:#e8e8ef">
+            <p>📃歌单内容：</p>
+            <div id="showText" style="padding:12px;background:rgba(248,249,250,0.08);border-radius:6px;margin-top:6px;color:#e8e8ef;"></div>
+        </div>
+    </div>
+</div>
+<script>
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+let token = localStorage.getItem("token") || "";
+let currentRole = "";
+let globalConfig = {bgUrl:"",videoBgUrl:"",content:""};
+const videoDom = document.getElementById('bgVideo');
+const defaultBgDom = document.getElementById('defaultBg');
+const urlParams = new URLSearchParams(window.location.search);
+const isGuestQuick = urlParams.get('guest') === '1';
+
+if(isMobile){
+    videoDom.removeAttribute("autoplay");
+    videoDom.style.display = "none";
+}
+
+// 歌单排序函数
+function sortSongList(text){
+    let pieces = text.split(/[,，]/);
+    let songs = pieces.map(s=>s.trim()).filter(s=> {
+        if(s.length <=0) return false;
+        const onlySymbol = /^[\s。、；;：:！!?？]+$/;
+        return !onlySymbol.test(s);
+    });
+    songs.sort((a,b)=>{
+        const aIsNumStart = /^\d/.test(a);
+        const bIsNumStart = /^\d/.test(b);
+        if(aIsNumStart && !bIsNumStart) return -1;
+        if(!aIsNumStart && bIsNumStart) return 1;
+        if(a.length !== b.length){
+            return a.length - b.length;
+        }
+        return a.localeCompare(b, 'zh-CN');
+    });
+    return songs.join('\n');
+}
+
+function renderSongList(){
+    let songArr = globalConfig.content.split('\n').filter(s=>s.trim());
+    let htmlStr = `<div class="song3col">`;
+    for(let s of songArr){
+        htmlStr += `<div class="song-item">${s}</div>`;
+    }
+    htmlStr += `</div>`;
+    document.getElementById("showText").innerHTML = htmlStr;
+}
+
+async function loadServerConfig(){
+    try{
+        const res = await fetch("/api/getConfig",{
+            headers:{
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        const data = await res.json();
+        if(!res.ok){
+            logout();
+            return;
+        }
+        globalConfig = data;
+        if(globalConfig.bgUrl){
+            document.body.style.backgroundImage = `url(${globalConfig.bgUrl})`;
+            videoDom.style.display = "none";
+            defaultBgDom.style.display = "none";
+        }else if(globalConfig.videoBgUrl){
+            if(!isMobile){
+                videoDom.src = globalConfig.videoBgUrl;
+                videoDom.style.display = "block";
+                document.body.style.backgroundImage = "";
+                defaultBgDom.style.display = "none";
+            }else{
+                document.body.style.backgroundImage = "";
+                videoDom.style.display = "none";
+                defaultBgDom.style.display = "block";
+            }
+        }else{
+            document.body.style.backgroundImage = "";
+            videoDom.style.display = "none";
+            defaultBgDom.style.display = "block";
+        }
+        document.getElementById("contentArea").value = globalConfig.content;
+        renderSongList();
+        if(isGuestQuick){
+            currentRole = "guest";
+            renderPage();
+        }
+    }catch(e){
+        console.error(e);
+    }
+}
+
+// 登录接口调用，不再本地校验账号密码
+async function login(){
+    let uname = document.getElementById("username").value.trim();
+    let pw = document.getElementById("pwd").value.trim();
+    if(!uname || !pw){
+        alert("账号密码不能为空");
+        return;
+    }
+    const res = await fetch("/api/login",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({username:uname,password:pw})
+    });
+    const ret = await res.json();
+    if(!ret.ok){
+        alert(ret.msg || "登录失败");
+        return;
+    }
+    token = ret.token;
+    currentRole = ret.role;
+    localStorage.setItem("token",token);
+    renderPage();
+}
+
+function renderPage(){
+    document.getElementById("loginArea").classList.add("hide");
+    document.getElementById("mainPage").classList.remove("hide");
+    document.getElementById("contentArea").value = globalConfig.content;
+    renderSongList();
+    const bgUploadDiv = document.getElementById("bgUploadArea");
+    const adminEditZone = document.getElementById("adminEditZone");
+    if(currentRole === "admin"){
+        document.getElementById("roleText").innerText = "霖鱼大王（可编辑）";
+        adminEditZone.classList.remove("hide");
+        bgUploadDiv.classList.remove("hide");
+        document.getElementById("bgFileInput").onchange = handleBgUpload;
+        document.getElementById("videoFileInput").onchange = handleVideoUpload;
+    }else{
+        document.getElementById("roleText").innerText = "小霖石（仅查看歌单）";
+        adminEditZone.classList.add("hide");
+        bgUploadDiv.classList.add("hide");
+    }
+}
+
+//上传背景带上token
+async function handleBgUpload(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const formData = new FormData();
+    formData.append("bgImage",file);
+    const res = await fetch("/api/uploadBg",{
+        method:"POST",
+        headers:{
+            "Authorization": `Bearer ${token}`
+        },
+        body:formData
+    });
+    const ret = await res.json();
+    if(ret.ok){
+        globalConfig.bgUrl = ret.bgUrl;
+        globalConfig.videoBgUrl = "";
+        document.body.style.backgroundImage = `url(${ret.bgUrl})`;
+        videoDom.style.display = "none";
+        defaultBgDom.style.display = "none";
+        alert("静态背景上传成功！所有设备同步生效");
+    }else{
+        alert(ret.msg || "上传失败");
+    }
+}
+
+async function handleVideoUpload(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const formData = new FormData();
+    formData.append("bgVideo",file);
+    const res = await fetch("/api/uploadVideoBg",{
+        method:"POST",
+        headers:{
+            "Authorization": `Bearer ${token}`
+        },
+        body:formData
+    });
+    const ret = await res.json();
+    if(ret.ok){
+        globalConfig.videoBgUrl = ret.videoBgUrl;
+        globalConfig.bgUrl = "";
+        if(!isMobile){
+            videoDom.src = ret.videoBgUrl;
+            videoDom.style.display = "block";
+            document.body.style.backgroundImage = "";
+            defaultBgDom.style.display = "none";
+        }else{
+            document.body.style.backgroundImage = "";
+            videoDom.style.display = "none";
+            defaultBgDom.style.display = "block";
+        }
+        alert("动态视频壁纸上传成功！电脑动态；手机显示默认背景");
+    }else{
+        alert(ret.msg || "上传失败");
+    }
+}
+
+async function clearBg(){
+    if(currentRole !== "admin") return;
+    const res = await fetch("/api/clearBg",{
+        method:"POST",
+        headers:{
+            "Authorization": `Bearer ${token}`
+        }
+    });
+    const ret = await res.json();
+    if(ret.ok){
+        globalConfig.bgUrl = "";
+        globalConfig.videoBgUrl = "";
+        document.body.style.backgroundImage = "";
+        videoDom.style.display = "none";
+        videoDom.src = "";
+        defaultBgDom.style.display = "block";
+        document.getElementById("bgFileInput").value = "";
+        document.getElementById("videoFileInput").value = "";
+        alert("背景已清除");
+    }else{
+        alert(ret.msg || "操作失败");
+    }
+}
+
+async function saveContent(){
+    if(currentRole !== "admin") return;
+    let val = document.getElementById("contentArea").value;
+    let sortedText = sortSongList(val);
+    document.getElementById("contentArea").value = sortedText;
+    const res = await fetch("/api/saveContent",{
+        method:"POST",
+        headers:{
+            "Content-Type":"application/json",
+            "Authorization": `Bearer ${token}`
+        },
+        body:JSON.stringify({content:sortedText})
+    });
+    const ret = await res.json();
+    if(ret.ok){
+        globalConfig.content = sortedText;
+        renderSongList();
+        alert("保存成功，已自动排序");
+    }else{
+        alert(ret.msg || "保存失败");
+    }
+}
+
+function logout(){
+    token = "";
+    currentRole = "";
+    localStorage.removeItem("token");
+    window.history.replaceState({},document.title,window.location.pathname);
+    document.getElementById("mainPage").classList.add("hide");
+    document.getElementById("loginArea").classList.remove("hide");
+    document.getElementById("username").value="";
+    document.getElementById("pwd").value="";
+}
+
+(async function init(){
+    await loadServerConfig();
+    if(token){
+        try{
+            const res = await fetch("/api/checkToken",{
+                headers:{"Authorization":`Bearer ${token}`}
+            });
+            const info = await res.json();
+            if(info.ok){
+                currentRole = info.role;
+                renderPage();
+            }else{
+                logout();
+            }
+        }catch(err){
+            logout();
+        }
+    }
+})();
+</script>
+</body>
+</html>
