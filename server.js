@@ -5,9 +5,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.listen(port, ()=>{
-  console.log(`服务运行 on port ${port}`)
-})
+
 // ========== 账号配置 ==========
 const USER_LIST = {
   "霖鱼july": { password: "88888", role:"admin" },
